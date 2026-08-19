@@ -4,3 +4,9 @@ out
 .DS_Store
 .eslintcache
 *.log*
+backend-IA/.venv
+backend-IA/__pycache__
+backend-IA/.env
+backend-IA/data
+backend-IA/models_store/*.pkl
+backend-IA/models_store/*.keras

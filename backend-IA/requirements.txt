@@ -1,0 +1,13 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic-settings==2.10.1
+opencv-python==4.11.0.86
+mediapipe==0.10.21
+numpy==2.2.6
+scikit-learn==1.6.1
+tensorflow==2.19.0
+pyttsx3==2.98
+gTTS==2.5.4
+python-multipart==0.0.20
+pytest==8.3.5
+httpx==0.28.1
