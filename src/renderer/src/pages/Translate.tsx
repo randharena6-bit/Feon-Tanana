@@ -115,7 +115,7 @@ export default function Translate(): React.JSX.Element {
 
   // Dessiner les landmarks sur le canvas
   const drawLandmarks = useCallback(
-    (landmarks: Landmarks | undefined, videoW: number, videoH: number): void => {
+    (landmarks: Landmarks[] | undefined, videoW: number, videoH: number): void => {
       if (!landmarks || !showLandmarks) return
       const ctx = canvasRef.current?.getContext('2d')
       if (!ctx) return
@@ -175,7 +175,7 @@ export default function Translate(): React.JSX.Element {
       const video = videoRef.current
       const res = result
       if (video && res?.sign && showLandmarks) {
-        drawLandmarks(res.landmarks, video.videoWidth, video.videoHeight)
+        drawLandmarks(res.landmarks ?? [], video.videoWidth, video.videoHeight)
       }
     }, 100)
     return () => clearInterval(handle)

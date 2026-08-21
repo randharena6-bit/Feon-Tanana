@@ -14,7 +14,15 @@ class HandTracker:
             raise RuntimeError(
                 "mediapipe n'est pas installé (incompatible avec cette version de Python)"
             )
-        self._hands = mp.solutions.hands.Hands(
+        if not hasattr(mp, "solutions"):
+            raise RuntimeError(
+                "Version de mediapipe incompatible : l'API 'solutions' est absente "
+                "(mediapipe>=1.0 utilise l'API 'tasks'). "
+                "Installez une version compatible (mediapipe<1.0 avec mp.solutions) ou "
+                "adaptez HandTracker à l'API tasks."
+            )
+        hands_module = mp.solutions.hands
+        self._hands = hands_module.Hands(
             static_image_mode=False,
             max_num_hands=settings.num_hands,
             min_detection_confidence=0.5,
