@@ -20,5 +20,12 @@ class Settings(BaseSettings):
     models_dir: str = "models_store"
     tts_engine: str = "pyttsx3"
 
+    database_url: str = (
+        "postgresql+psycopg2://feon_user:feon_secret@127.0.0.1:5432/feon_tanana"
+    )
+    secret_key: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24
+
 
 settings = Settings()

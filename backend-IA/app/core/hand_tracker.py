@@ -1,11 +1,19 @@
 import cv2
-import mediapipe as mp
+
+try:
+    import mediapipe as mp
+except ImportError:
+    mp = None
 
 from app.config import settings
 
 
 class HandTracker:
     def __init__(self) -> None:
+        if mp is None:
+            raise RuntimeError(
+                "mediapipe n'est pas installé (incompatible avec cette version de Python)"
+            )
         self._hands = mp.solutions.hands.Hands(
             static_image_mode=False,
             max_num_hands=settings.num_hands,

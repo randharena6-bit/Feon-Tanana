@@ -1,8 +1,12 @@
 from pathlib import Path
 
 import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+
+try:
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+    from tensorflow.keras.models import Sequential, load_model
+except ImportError:
+    LSTM = Dense = Dropout = Sequential = load_model = None
 
 from app.config import settings
 from app.utils.landmark_utils import flatten_landmarks
@@ -10,6 +14,8 @@ from app.utils.landmark_utils import flatten_landmarks
 
 class DynamicClassifier:
     def __init__(self, num_classes: int = 30) -> None:
+        if Sequential is None:
+            raise RuntimeError("tensorflow n'est pas installé")
         self.model = Sequential(
             [
                 LSTM(64, return_sequences=True, input_shape=(settings.sequence_length, 63)),
@@ -34,6 +40,6 @@ class DynamicClassifier:
         self.model.save(path)
 
     def load(self, path: Path = Path(settings.models_dir) / "dynamic_model.keras") -> None:
-        from tensorflow.keras.models import load_model
-
+        if load_model is None:
+            raise RuntimeError("tensorflow n'est pas installé")
         self.model = load_model(path)
