@@ -60,3 +60,5 @@ API disponible sur http://127.0.0.1:8000 (docs Swagger : /docs).
 
 `POST /dataset/record` avec `{ "label": "bonjour", "frames": [...] }` enregistre
 chaque échantillon dans `data/<label>/sample_XXXX.json`.
+
+

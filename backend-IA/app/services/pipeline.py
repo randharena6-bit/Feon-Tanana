@@ -42,22 +42,29 @@ class DetectionPipeline:
     def ready(self) -> bool:
         return self.tracker is not None
 
-    def process_frame(self, frame_bgr: cv2.typing.MatLike) -> tuple[str, float, str]:
+    def process_frame(
+        self, frame_bgr: cv2.typing.MatLike
+    ) -> tuple[str, float, str, list[dict] | None]:
         if self.tracker is None:
-            return "", 0.0, "unavailable"
+            return "", 0.0, "unavailable", None
 
         hands = self.tracker.detect(frame_bgr)
         if not hands:
             self.sequence.clear()
-            return "", 0.0, "static"
+            return "", 0.0, "static", None
 
         hand = normalize_landmarks(hands[0])
         self.sequence.append(hand)
 
+        # Retourne les landmarks normalisés de la main détectée
+        landmarks: list[dict] = [
+            {"x": float(lm[0]), "y": float(lm[1]), "z": float(lm[2])} for lm in hand
+        ]
+
         if self.static_model is not None:
             label, proba = self.static_model.predict(hand)
             if proba >= settings.confidence_threshold:
-                return label, proba, "static"
+                return label, proba, "static", landmarks
 
         if (
             self.dynamic_model is not None
@@ -66,9 +73,9 @@ class DetectionPipeline:
             tensor = sequence_to_tensor(list(self.sequence), settings.sequence_length)
             label, proba = self.dynamic_model.predict(tensor)
             if proba >= settings.confidence_threshold:
-                return label, proba, "dynamic"
+                return label, proba, "dynamic", landmarks
 
-        return "", 0.0, "static"
+        return "", 0.0, "static", landmarks
 
     def close(self) -> None:
         self.tracker.close()

@@ -1,48 +1,45 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import * as authApi from '../api/auth'
-import type { User } from '../api/auth'
 import { tokenStore } from '../api/client'
+import { AuthContext } from './auth-context'
 
-interface AuthContextValue {
-  user: User | null
-  loading: boolean
-  login: (username: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string) => Promise<void>
-  logout: () => void
+function persistSession(res: authApi.AuthResponse): void {
+  tokenStore.set(res.access_token)
+  localStorage.setItem('ft_user', JSON.stringify(res.user))
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
-
 export function AuthProvider({ children }: { children: ReactNode }): React.JSX.Element {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<authApi.User | null>(null)
+  const [loading, setLoading] = useState<boolean>(() => tokenStore.get() !== null)
 
   useEffect(() => {
-    const token = tokenStore.get()
-    if (!token) {
-      setLoading(false)
-      return
-    }
+    if (!tokenStore.get()) return
+    let cancelled = false
     authApi
       .getMe()
-      .then(setUser)
+      .then((me) => {
+        if (!cancelled) setUser(me)
+      })
       .catch(() => tokenStore.clear())
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const login = useCallback(async (username: string, password: string) => {
     const res = await authApi.login(username, password)
-    tokenStore.set(res.access_token)
-    localStorage.setItem('ft_user', JSON.stringify(res.user))
+    persistSession(res)
     setUser(res.user)
   }, [])
 
   const register = useCallback(async (username: string, email: string, password: string) => {
     const res = await authApi.register(username, email, password)
-    tokenStore.set(res.access_token)
-    localStorage.setItem('ft_user', JSON.stringify(res.user))
+    persistSession(res)
     setUser(res.user)
   }, [])
 
@@ -57,12 +54,4 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) {
-    throw new Error('useAuth doit être utilisé dans un AuthProvider')
-  }
-  return ctx
 }

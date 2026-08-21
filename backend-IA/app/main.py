@@ -23,6 +23,26 @@ app.include_router(dataset.router)
 app.include_router(tts.router)
 
 
+# --- Initialisation des signes par défaut ---
+DEFAULT_SIGNS = [
+    "bonjour", "merci", "oui", "non", "je t'aime", "s'il te plaît",
+    "merci beaucoup", "ami", "pardon", "pourquoi", "maison",
+    "moi", "toi", "amour", "au revoir"
+]
+
+
+def _init_default_signs(): -> None:
+    import os
+    from pathlib import Path
+    base = Path(settings.data_dir)
+    base.mkdir(parents=True, exist_ok=True)
+    for sign in DEFAULT_SIGNS:
+        (base / sign).mkdir(parents=True, exist_ok=True)
+
+
+_init_default_signs()
+
+
 @app.get("/")
 async def root() -> dict:
     return {"app": settings.app_name, "status": "running"}

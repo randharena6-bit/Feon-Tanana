@@ -1,13 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
-import { useAuth } from '../context/AuthContext'
-import {
-  IconDatabase,
-  IconHand,
-  IconHome,
-  IconLogout,
-  IconUser
-} from './Icons'
+import { useAuth } from '../context/useAuth'
+import { IconDatabase, IconHand, IconHome, IconLogout, IconUser } from './Icons'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Tableau de bord', icon: IconHome, end: true },

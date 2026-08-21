@@ -13,11 +13,7 @@ export interface AuthResponse {
   user: User
 }
 
-export function register(
-  username: string,
-  email: string,
-  password: string
-): Promise<AuthResponse> {
+export function register(username: string, email: string, password: string): Promise<AuthResponse> {
   return api.post<AuthResponse>('/auth/register', { username, email, password }, false)
 }
 
