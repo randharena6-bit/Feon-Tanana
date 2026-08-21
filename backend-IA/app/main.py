@@ -31,7 +31,7 @@ DEFAULT_SIGNS = [
 ]
 
 
-def _init_default_signs(): -> None:
+def _init_default_signs() -> None:
     import os
     from pathlib import Path
     base = Path(settings.data_dir)

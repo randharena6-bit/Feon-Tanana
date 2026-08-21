@@ -1,9 +1,16 @@
 import { API_BASE, api } from './client'
 
+export interface Landmarks {
+  x: number
+  y: number
+  z: number
+}
+
 export interface DetectionResult {
   sign: string
   confidence: number
   mode: string
+  landmarks: Landmarks[] | null
 }
 
 export function detectFrame(imageDataUrl: string): Promise<DetectionResult> {

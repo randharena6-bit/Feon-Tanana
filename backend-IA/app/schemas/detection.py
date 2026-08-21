@@ -15,6 +15,7 @@ class DetectionResult(BaseModel):
     sign: str
     confidence: float
     mode: str
+    landmarks: list[Landmarks] | None = None
 
 
 class RecordingRequest(BaseModel):

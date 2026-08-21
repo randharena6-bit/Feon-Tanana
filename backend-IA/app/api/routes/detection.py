@@ -36,8 +36,8 @@ async def detect_frame(request: DetectRequest) -> DetectionResult:
             detail="Moteur de détection indisponible (mediapipe non installé)",
         )
 
-    sign, confidence, mode = pipeline.process_frame(frame)
-    return DetectionResult(sign=sign, confidence=confidence, mode=mode)
+    sign, confidence, mode, landmarks = pipeline.process_frame(frame)
+    return DetectionResult(sign=sign, confidence=confidence, mode=mode, landmarks=landmarks)
 
 
 @router.get("/health")
