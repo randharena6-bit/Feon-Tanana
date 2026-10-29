@@ -41,7 +41,7 @@ def _ensure_hand_model(model_path: str) -> None:
 
 
 class HandTracker:
-    def __init__(self) -> None:
+    def __init__(self, mode: str = "video") -> None:
         if mp is None:
             raise RuntimeError(
                 "mediapipe n'est pas installé (incompatible avec cette version de Python)"
@@ -52,11 +52,12 @@ class HandTracker:
         self._hand_connections: list[tuple[int, int]] = []
         self._last_timestamp_ms = 0
         self._last_error: str | None = None
+        self._mode = mode
 
         if hasattr(mp, "solutions") and hasattr(mp.solutions, "hands"):
             hands_module = mp.solutions.hands
             self._hands = hands_module.Hands(
-                static_image_mode=False,
+                static_image_mode=(mode == "image"),
                 max_num_hands=settings.num_hands,
                 min_detection_confidence=_MIN_DETECTION_CONFIDENCE,
                 min_tracking_confidence=_MIN_TRACKING_CONFIDENCE,
@@ -97,9 +98,10 @@ class HandTracker:
                     (0, 17),
                 ]
 
+            _running_mode = RunningMode.IMAGE if mode == "image" else RunningMode.VIDEO
             options = HandLandmarkerOptions(
                 base_options=BaseOptions(model_asset_path=model_path),
-                running_mode=RunningMode.VIDEO,
+                running_mode=_running_mode,
                 num_hands=settings.num_hands,
                 min_hand_detection_confidence=_MIN_DETECTION_CONFIDENCE,
                 min_tracking_confidence=_MIN_TRACKING_CONFIDENCE,
@@ -129,9 +131,12 @@ class HandTracker:
                     image_format=mp.ImageFormat.SRGB,
                     data=np.ascontiguousarray(frame_rgb),
                 )
-                timestamp_ms = max(int(time.monotonic() * 1000), self._last_timestamp_ms + 1)
-                results = self._hand_landmarker.detect_for_video(mp_image, timestamp_ms)
-                self._last_timestamp_ms = timestamp_ms
+                if self._mode == "image":
+                    results = self._hand_landmarker.detect(mp_image)
+                else:
+                    timestamp_ms = max(int(time.monotonic() * 1000), self._last_timestamp_ms + 1)
+                    results = self._hand_landmarker.detect_for_video(mp_image, timestamp_ms)
+                    self._last_timestamp_ms = timestamp_ms
                 if not results.hand_landmarks:
                     return []
                 return [

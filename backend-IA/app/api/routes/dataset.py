@@ -11,16 +11,16 @@ from app.services.dataset_service import DatasetService
 router = APIRouter(prefix="/dataset", tags=["dataset"])
 
 service = DatasetService()
-_tracker = None
+_image_tracker = None
 
 
-def _get_tracker():
-    global _tracker
-    if _tracker is None:
+def _get_image_tracker():
+    global _image_tracker
+    if _image_tracker is None:
         from app.core.hand_tracker import HandTracker
 
-        _tracker = HandTracker()
-    return _tracker
+        _image_tracker = HandTracker(mode="image")
+    return _image_tracker
 
 
 class RecordImagesRequest(BaseModel):
@@ -30,13 +30,19 @@ class RecordImagesRequest(BaseModel):
 
 @router.post("/record", response_model=RecordingResponse)
 async def record(request: RecordingRequest) -> RecordingResponse:
-    return RecordingResponse(**service.save_recording(request.label, request.frames))
+    frames: list[list[list[dict]]] = []
+    for frame in request.frames:
+        hands = []
+        for hand in frame.hands:
+            hands.append([{"x": lm.x, "y": lm.y, "z": lm.z} for lm in hand])
+        frames.append(hands)
+    return RecordingResponse(**service.save_recording(request.label, frames))
 
 
 @router.post("/record_images", response_model=RecordingResponse)
 async def record_images(request: RecordImagesRequest) -> RecordingResponse:
     try:
-        tracker = _get_tracker()
+        tracker = _get_image_tracker()
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     frames: list[list] = []
@@ -73,3 +79,6 @@ async def labels() -> list[str]:
 @router.get("/stats")
 async def stats() -> dict[str, int]:
     return service.count_samples()
+
+
+_get_tracker = _get_image_tracker

@@ -53,12 +53,13 @@ class DetectionPipeline:
             self.sequence.clear()
             return "", 0.0, "static", None
 
-        hand = normalize_landmarks(hands[0])
+        raw_hand = hands[0]
+        hand = normalize_landmarks(raw_hand)
         self.sequence.append(hand)
 
-        # Retourne les landmarks normalisés de la main détectée
+        # Retourne les landmarks bruts de la main détectée (coordonnées image)
         landmarks: list[dict] = [
-            {"x": float(lm[0]), "y": float(lm[1]), "z": float(lm[2])} for lm in hand
+            {"x": float(lm[0]), "y": float(lm[1]), "z": float(lm[2])} for lm in raw_hand
         ]
 
         if self.static_model is not None:
