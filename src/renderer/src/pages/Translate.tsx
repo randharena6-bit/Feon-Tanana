@@ -9,14 +9,42 @@ import { IconAlert, IconCamera, IconTrash, IconVolume } from '../components/Icon
 const CAPTURE_INTERVAL_MS = 900
 const DUPLICATE_TIMEOUT_MS = 2500
 
+// Connexions officielles des landmarks MediaPipe Hands (21 points)
+const HAND_CONNECTIONS: Array<[number, number]> = [
+  [0, 1],
+  [1, 2],
+  [2, 3],
+  [3, 4], // pouce
+  [0, 5],
+  [5, 6],
+  [6, 7],
+  [7, 8], // index
+  [5, 9],
+  [9, 10],
+  [10, 11],
+  [11, 12], // majeur
+  [9, 13],
+  [13, 14],
+  [14, 15],
+  [15, 16], // annulaire
+  [13, 17],
+  [17, 18],
+  [18, 19],
+  [19, 20], // auriculaire
+  [0, 17] // base palmaire
+]
+
 export default function Translate(): React.JSX.Element {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const overlayRef = useRef<HTMLCanvasElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastSignRef = useRef<{ sign: string; at: number }>({ sign: '', at: 0 })
   const busyRef = useRef(false)
+  const resultRef = useRef<DetectionResult | null>(null)
+  const showLandmarksRef = useRef(false)
 
   const [cameraOn, setCameraOn] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -24,6 +52,12 @@ export default function Translate(): React.JSX.Element {
   const [sentence, setSentence] = useState<string[]>([])
   const [speaking, setSpeaking] = useState(false)
   const [showLandmarks, setShowLandmarks] = useState(false)
+
+  const clearOverlay = useCallback((): void => {
+    const overlay = overlayRef.current
+    const ctx = overlay?.getContext('2d')
+    if (overlay && ctx) ctx.clearRect(0, 0, overlay.width, overlay.height)
+  }, [])
 
   const stopCamera = useCallback((): void => {
     if (timerRef.current) {
@@ -34,10 +68,73 @@ export default function Translate(): React.JSX.Element {
     streamRef.current = null
     setCameraOn(false)
     setResult(null)
+    resultRef.current = null
     setShowLandmarks(false)
   }, [])
 
   useEffect(() => stopCamera, [stopCamera])
+
+  // Dessiner les landmarks sur le canvas visible superposé à la vidéo
+  const drawLandmarks = useCallback(
+    (landmarks: Landmarks[] | undefined, videoW: number, videoH: number): void => {
+      const overlay = overlayRef.current
+      if (!overlay || videoW === 0 || videoH === 0) return
+      const ctx = overlay.getContext('2d')
+      if (!ctx) return
+
+      if (overlay.width !== videoW || overlay.height !== videoH) {
+        overlay.width = videoW
+        overlay.height = videoH
+      }
+      ctx.clearRect(0, 0, overlay.width, overlay.height)
+      if (!landmarks || !showLandmarksRef.current) return
+
+      ctx.save()
+      ctx.lineWidth = 2
+
+      // Connexions entre les points
+      ctx.strokeStyle = '#00ffcc'
+      ctx.beginPath()
+      HAND_CONNECTIONS.forEach(([a, b]) => {
+        const pa = landmarks[a]
+        const pb = landmarks[b]
+        if (pa && pb) {
+          ctx.moveTo(pa.x * videoW, pa.y * videoH)
+          ctx.lineTo(pb.x * videoW, pb.y * videoH)
+        }
+      })
+      ctx.stroke()
+
+      // Points des landmarks
+      landmarks.forEach((lm) => {
+        if (!lm) return
+        ctx.beginPath()
+        ctx.arc(lm.x * videoW, lm.y * videoH, 5, 0, Math.PI * 2)
+        ctx.fillStyle = '#ff6b6b'
+        ctx.fill()
+        ctx.strokeStyle = '#fff'
+        ctx.lineWidth = 2
+        ctx.stroke()
+      })
+
+      ctx.restore()
+    },
+    []
+  )
+
+  // Effacer / redessiner l'overlay quand on active ou désactive les landmarks
+  useEffect(() => {
+    showLandmarksRef.current = showLandmarks
+    if (!showLandmarks) {
+      clearOverlay()
+      return
+    }
+    const res = resultRef.current
+    const video = videoRef.current
+    if (video && res?.landmarks) {
+      drawLandmarks(res.landmarks, video.videoWidth, video.videoHeight)
+    }
+  }, [showLandmarks, clearOverlay, drawLandmarks])
 
   const captureAndDetect = useCallback(async (): Promise<void> => {
     const video = videoRef.current
@@ -56,6 +153,8 @@ export default function Translate(): React.JSX.Element {
 
       const res = await detectFrame(image)
       setResult(res)
+      resultRef.current = res
+      drawLandmarks(res.landmarks ?? undefined, video.videoWidth, video.videoHeight)
 
       if (res.sign) {
         const now = Date.now()
@@ -67,10 +166,11 @@ export default function Translate(): React.JSX.Element {
       }
     } catch {
       setResult(null)
+      resultRef.current = null
     } finally {
       busyRef.current = false
     }
-  }, [])
+  }, [drawLandmarks])
 
   const startCamera = useCallback(async (): Promise<void> => {
     setCameraError(null)
@@ -113,74 +213,6 @@ export default function Translate(): React.JSX.Element {
     }
   }, [sentence])
 
-  // Dessiner les landmarks sur le canvas
-  const drawLandmarks = useCallback(
-    (landmarks: Landmarks[] | undefined, videoW: number, videoH: number): void => {
-      if (!landmarks || !showLandmarks) return
-      const ctx = canvasRef.current?.getContext('2d')
-      if (!ctx) return
-
-      ctx.save()
-      ctx.lineWidth = 2
-      ctx.strokeStyle = '#00ffcc'
-
-      // Dessiner les connexions entre les points de landmarks (MediaPipe hand landmarks)
-      const connections = [
-        [0, 1], [1, 2], [2, 3], [3, 4], // pouce
-        [0, 5], [5, 6], [6, 7], [7, 8], // index
-        [0, 9], [9, 10], [10, 11], [11, 12], // majeur
-        [0, 13], [13, 14], [14, 15], [15, 16], // annulaire
-        [0, 17], [17, 18], [18, 20], [20, 22], // auriculaire
-        [5, 9], [9, 13], [13, 17], // connexions palmaire
-      ]
-
-      ctx.beginPath()
-      connections.forEach(([a, b]) => {
-        const pa = landmarks[a]
-        const pb = landmarks[b]
-        if (pa && pb) {
-          const x1 = (pa.x * videoW) / 1
-          const y1 = (pa.y * videoH) / 1
-          const x2 = (pb.x * videoW) / 1
-          const y2 = (pb.y * videoH) / 1
-          ctx.moveTo(x1, y1)
-          ctx.lineTo(x2, y2)
-        }
-      })
-      ctx.stroke()
-
-      // Dessiner les points des landmarks
-      landmarks.forEach((lm) => {
-        if (lm) {
-          const x = lm.x * videoW
-          const y = lm.y * videoH
-          ctx.beginPath()
-          ctx.arc(x, y, 5, 0, Math.PI * 2)
-          ctx.fillStyle = '#ff6b6b'
-          ctx.fill()
-          ctx.strokeStyle = '#fff'
-          ctx.lineWidth = 2
-          ctx.stroke()
-        }
-      })
-
-      ctx.restore()
-    },
-    [showLandmarks]
-  )
-
-  useEffect(() => {
-    // Redessiner à chaque changement de résultat si showLandmarks est actif
-    const handle = setInterval(() => {
-      const video = videoRef.current
-      const res = result
-      if (video && res?.sign && showLandmarks) {
-        drawLandmarks(res.landmarks ?? [], video.videoWidth, video.videoHeight)
-      }
-    }, 100)
-    return () => clearInterval(handle)
-  }, [showLandmarks, result])
-
   return (
     <div className="page">
       <header className="page-header">
@@ -219,7 +251,7 @@ export default function Translate(): React.JSX.Element {
 
       <div className="translate-grid">
         <section className="card camera-card">
-          <div className="camera-frame">
+          <div className="camera-frame" style={{ position: 'relative' }}>
             <video
               ref={videoRef}
               muted
@@ -227,10 +259,18 @@ export default function Translate(): React.JSX.Element {
               className="camera-video"
               style={{ width: '100%', borderRadius: 12 }}
             />
+            <canvas ref={canvasRef} hidden style={{ width: '100%', borderRadius: 12 }} />
             <canvas
-              ref={canvasRef}
-              hidden
-              style={{ width: '100%', borderRadius: 12 }}
+              ref={overlayRef}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                borderRadius: 12
+              }}
             />
             {!cameraOn && (
               <div className="camera-placeholder">
@@ -242,7 +282,9 @@ export default function Translate(): React.JSX.Element {
               <div className="camera-detection">
                 <span className="detection-sign">{result.sign}</span>
                 <span className="detection-conf">{Math.round(result.confidence * 100)}%</span>
-                <span className={`badge ${result.mode === 'dynamic' ? 'badge-blue' : 'badge-violet'}`}>
+                <span
+                  className={`badge ${result.mode === 'dynamic' ? 'badge-blue' : 'badge-violet'}`}
+                >
                   {result.mode === 'dynamic' ? 'Dynamique' : 'Statique'}
                 </span>
               </div>

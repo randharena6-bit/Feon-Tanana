@@ -78,4 +78,5 @@ class DetectionPipeline:
         return "", 0.0, "static", landmarks
 
     def close(self) -> None:
-        self.tracker.close()
+        if self.tracker is not None:
+            self.tracker.close()

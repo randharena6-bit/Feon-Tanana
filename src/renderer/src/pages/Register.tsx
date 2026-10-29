@@ -3,8 +3,12 @@ import type { FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 
 import { ApiError } from '../api/client'
-import { IconHand } from '../components/Icons'
+import { AuthLayout } from '../components/AuthLayout'
+import { PasswordField, PasswordStrength, TextField } from '../components/AuthFields'
+import { IconAlert, IconMail, IconUser } from '../components/Icons'
 import { useAuth } from '../context/useAuth'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function Register(): React.JSX.Element {
   const { register, user } = useAuth()
@@ -13,6 +17,12 @@ export default function Register(): React.JSX.Element {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [touched, setTouched] = useState({
+    username: false,
+    email: false,
+    password: false,
+    confirm: false
+  })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -20,20 +30,37 @@ export default function Register(): React.JSX.Element {
     return <Navigate to="/" replace />
   }
 
+  const usernameError =
+    touched.username && username.trim().length < 3
+      ? "Le nom d'utilisateur doit contenir au moins 3 caractères"
+      : null
+  const emailError =
+    touched.email && !EMAIL_PATTERN.test(email.trim()) ? 'Adresse email invalide' : null
+  const passwordError =
+    touched.password && password.length < 6
+      ? 'Le mot de passe doit contenir au moins 6 caractères'
+      : null
+  const confirmError =
+    touched.confirm && confirm !== password ? 'Les mots de passe ne correspondent pas' : null
+
+  const canSubmit =
+    username.trim().length >= 3 &&
+    EMAIL_PATTERN.test(email.trim()) &&
+    password.length >= 6 &&
+    confirm === password &&
+    !submitting
+
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
+    setTouched({ username: true, email: true, password: true, confirm: true })
     setError(null)
 
-    if (username.trim().length < 3) {
-      setError("Le nom d'utilisateur doit contenir au moins 3 caractères")
-      return
-    }
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères')
-      return
-    }
-    if (password !== confirm) {
-      setError('Les mots de passe ne correspondent pas')
+    if (
+      username.trim().length < 3 ||
+      !EMAIL_PATTERN.test(email.trim()) ||
+      password.length < 6 ||
+      password !== confirm
+    ) {
       return
     }
 
@@ -49,87 +76,87 @@ export default function Register(): React.JSX.Element {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-brand">
-          <div className="brand-logo lg">
-            <IconHand size={28} />
-          </div>
-          <h1>SignTranslate AI</h1>
-          <p>Créez votre compte pour commencer</p>
-        </div>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <h2>Inscription</h2>
-
-          {error && (
-            <div className="alert alert-error" role="alert">
-              {error}
-            </div>
-          )}
-
-          <div className="field">
-            <label htmlFor="username">Nom d&apos;utilisateur</label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="3 caractères minimum"
-              autoComplete="username"
-              required
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="vous@exemple.fr"
-              autoComplete="email"
-              required
-            />
-          </div>
-
-          <div className="field-row">
-            <div className="field">
-              <label htmlFor="password">Mot de passe</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="6 caractères minimum"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="confirm">Confirmation</label>
-              <input
-                id="confirm"
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Répétez le mot de passe"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-          </div>
-
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Création…' : 'Créer mon compte'}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          Déjà inscrit ? <Link to="/login">Se connecter</Link>
-        </p>
+    <AuthLayout>
+      <div className="auth-head">
+        <h1>Créer un compte</h1>
+        <p>Rejoignez Feon Tanana et commencez à traduire.</p>
       </div>
-    </div>
+
+      <form onSubmit={handleSubmit} noValidate>
+        {error && (
+          <div className="alert alert-error" role="alert">
+            <IconAlert size={18} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <TextField
+          id="username"
+          label="Nom d'utilisateur"
+          value={username}
+          onChange={setUsername}
+          onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+          placeholder="3 caractères minimum"
+          autoComplete="username"
+          icon={<IconUser size={17} />}
+          error={usernameError}
+        />
+
+        <TextField
+          id="email"
+          label="Email"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          placeholder="vous@exemple.fr"
+          autoComplete="email"
+          icon={<IconMail size={17} />}
+          error={emailError}
+        />
+
+        <PasswordField
+          id="password"
+          label="Mot de passe"
+          value={password}
+          onChange={setPassword}
+          onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+          placeholder="6 caractères minimum"
+          autoComplete="new-password"
+          error={passwordError}
+        />
+
+        <PasswordStrength password={password} />
+
+        <PasswordField
+          id="confirm"
+          label="Confirmation du mot de passe"
+          value={confirm}
+          onChange={setConfirm}
+          onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+          placeholder="Répétez le mot de passe"
+          autoComplete="new-password"
+          error={confirmError}
+        />
+
+        <button
+          type="submit"
+          className="btn btn-primary btn-block btn-loading"
+          disabled={!canSubmit}
+        >
+          {submitting ? (
+            <>
+              <span className="btn-spinner" /> Création…
+            </>
+          ) : (
+            'Créer mon compte'
+          )}
+        </button>
+      </form>
+
+      <p className="auth-switch">
+        Déjà inscrit ? <Link to="/login">Se connecter</Link>
+      </p>
+    </AuthLayout>
   )
 }
