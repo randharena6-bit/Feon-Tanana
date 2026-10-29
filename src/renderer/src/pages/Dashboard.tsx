@@ -3,13 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { getStats } from '../api/dataset'
 import { checkHealth } from '../api/detection'
-import {
-  IconActivity,
-  IconCheck,
-  IconDatabase,
-  IconHand,
-  IconSparkles
-} from '../components/Icons'
+import { IconActivity, IconCheck, IconDatabase, IconHand, IconSparkles } from '../components/Icons'
 import { useAuth } from '../context/useAuth'
 
 export default function Dashboard(): React.JSX.Element {
@@ -26,7 +20,7 @@ export default function Dashboard(): React.JSX.Element {
 
   const labels = Object.keys(stats)
   const totalSamples = Object.values(stats).reduce((a, b) => a + b, 0)
-  const maxSamples = labels.length > 0 ? Math.max(...Object.values(stats)) : 1
+  const maxSamples = labels.length > 0 ? Math.max(1, ...Object.values(stats)) : 1
 
   return (
     <div className="page">

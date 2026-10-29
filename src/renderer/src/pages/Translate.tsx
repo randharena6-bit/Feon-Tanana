@@ -222,24 +222,25 @@ export default function Translate(): React.JSX.Element {
             Montrez vos signes à la caméra — la traduction s&apos;affiche automatiquement
           </p>
         </div>
-        {!cameraOn ? (
-          <button type="button" className="btn btn-primary" onClick={startCamera}>
-            <IconCamera size={16} />
-            Activer la caméra
+        <div className="header-actions">
+          {!cameraOn ? (
+            <button type="button" className="btn btn-primary" onClick={startCamera}>
+              <IconCamera size={16} />
+              Activer la caméra
+            </button>
+          ) : (
+            <button type="button" className="btn btn-danger" onClick={stopCamera}>
+              Arrêter
+            </button>
+          )}
+          <button
+            type="button"
+            className={`btn btn-ghost btn-sm${showLandmarks ? ' is-active' : ''}`}
+            onClick={() => setShowLandmarks((s) => !s)}
+          >
+            <IconCamera size={14} /> Landmarks
           </button>
-        ) : (
-          <button type="button" className="btn btn-danger" onClick={stopCamera}>
-            Arrêter
-          </button>
-        )}
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => setShowLandmarks((s) => !s)}
-          style={{ marginLeft: 8, fontSize: 12 }}
-        >
-          <IconCamera size={12} /> Landmarks
-        </button>
+        </div>
       </header>
 
       {cameraError && (
@@ -251,27 +252,17 @@ export default function Translate(): React.JSX.Element {
 
       <div className="translate-grid">
         <section className="card camera-card">
-          <div className="camera-frame" style={{ position: 'relative' }}>
-            <video
-              ref={videoRef}
-              muted
-              playsInline
-              className="camera-video"
-              style={{ width: '100%', borderRadius: 12 }}
-            />
-            <canvas ref={canvasRef} hidden style={{ width: '100%', borderRadius: 12 }} />
-            <canvas
-              ref={overlayRef}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-                borderRadius: 12
-              }}
-            />
+          <div className="card-head">
+            <h2 className="card-title">Caméra</h2>
+            <span className={`badge ${cameraOn ? 'badge-success' : 'badge-muted'}`}>
+              <span className={`status-dot${cameraOn ? ' on' : ''}`} />
+              {cameraOn ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+          <div className="camera-frame">
+            <video ref={videoRef} muted playsInline className="camera-video" />
+            <canvas ref={canvasRef} hidden />
+            <canvas ref={overlayRef} className="camera-overlay" />
             {!cameraOn && (
               <div className="camera-placeholder">
                 <IconCamera size={40} />
@@ -293,7 +284,10 @@ export default function Translate(): React.JSX.Element {
         </section>
 
         <section className="card sentence-card">
-          <h2 className="card-title">Phrase traduite</h2>
+          <div className="card-head">
+            <h2 className="card-title">Phrase traduite</h2>
+            <span className="badge badge-muted">{sentence.length} signe(s)</span>
+          </div>
 
           <div className="sentence-box">
             {sentence.length === 0 ? (

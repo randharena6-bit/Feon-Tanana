@@ -15,7 +15,9 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }): React.J
       aria-label={nextLabel}
       title={nextLabel}
     >
-      <span className="theme-toggle-icon">{isDark ? <IconMoon size={16} /> : <IconSun size={16} />}</span>
+      <span className="theme-toggle-icon">
+        {isDark ? <IconMoon size={16} /> : <IconSun size={16} />}
+      </span>
       {!compact && <span>{isDark ? 'Thème sombre' : 'Thème clair'}</span>}
     </button>
   )

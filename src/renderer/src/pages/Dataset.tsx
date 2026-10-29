@@ -118,7 +118,10 @@ export default function Dataset(): React.JSX.Element {
 
       <div className="dataset-grid">
         <section className="card">
-          <h2 className="card-title">Enregistrer un nouveau signe</h2>
+          <div className="card-head">
+            <h2 className="card-title">Enregistrer un nouveau signe</h2>
+            <span className="badge badge-violet">{FRAMES_TO_CAPTURE} images</span>
+          </div>
 
           {message && (
             <div className={`alert ${message.type === 'ok' ? 'alert-success' : 'alert-error'}`}>
@@ -176,9 +179,12 @@ export default function Dataset(): React.JSX.Element {
         </section>
 
         <section className="card">
-          <h2 className="card-title">Signes existants</h2>
+          <div className="card-head">
+            <h2 className="card-title">Signes existants</h2>
+            <span className="badge badge-muted">{labels.length} signe(s)</span>
+          </div>
           {labels.length === 0 ? (
-            <p className="hint">
+            <p className="empty-state">
               Aucun signe enregistré. Commencez par capturer votre premier signe.
             </p>
           ) : (
