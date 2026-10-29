@@ -3,7 +3,13 @@ import { Link } from 'react-router-dom'
 
 import { getStats } from '../api/dataset'
 import { checkHealth } from '../api/detection'
-import { IconActivity, IconCheck, IconDatabase, IconHand } from '../components/Icons'
+import {
+  IconActivity,
+  IconCheck,
+  IconDatabase,
+  IconHand,
+  IconSparkles
+} from '../components/Icons'
 import { useAuth } from '../context/useAuth'
 
 export default function Dashboard(): React.JSX.Element {
@@ -20,13 +26,14 @@ export default function Dashboard(): React.JSX.Element {
 
   const labels = Object.keys(stats)
   const totalSamples = Object.values(stats).reduce((a, b) => a + b, 0)
+  const maxSamples = labels.length > 0 ? Math.max(...Object.values(stats)) : 1
 
   return (
     <div className="page">
       <header className="page-header">
         <div>
-          <h1>Bonjour, {user?.username} 👋</h1>
-          <p className="page-subtitle">Bienvenue sur votre tableau de bord</p>
+          <h1>Tableau de bord</h1>
+          <p className="page-subtitle">Bonjour {user?.username}, voici votre activité</p>
         </div>
         <span
           className={`badge ${backendOk === null ? 'badge-muted' : backendOk ? 'badge-success' : 'badge-danger'}`}
@@ -35,6 +42,32 @@ export default function Dashboard(): React.JSX.Element {
           Backend {backendOk === null ? '…' : backendOk ? 'en ligne' : 'hors ligne'}
         </span>
       </header>
+
+      <section className="hero-card">
+        <div className="hero-body">
+          <span className="auth-pill">
+            <IconSparkles size={14} /> Traduction en temps réel
+          </span>
+          <h2>Prêt à traduire la langue des signes ?</h2>
+          <p>
+            Activez votre caméra et laissez l&apos;IA convertir vos gestes en texte et en parole,
+            instantanément.
+          </p>
+          <div className="hero-actions">
+            <Link to="/translate" className="btn btn-primary">
+              <IconHand size={16} />
+              Lancer la traduction
+            </Link>
+            <Link to="/dataset" className="btn btn-ghost">
+              <IconDatabase size={16} />
+              Gérer le dataset
+            </Link>
+          </div>
+        </div>
+        <div className="hero-art" aria-hidden="true">
+          <IconHand size={120} />
+        </div>
+      </section>
 
       <section className="stat-grid">
         <div className="card stat-card">
@@ -71,28 +104,16 @@ export default function Dashboard(): React.JSX.Element {
       </section>
 
       <section className="card">
-        <h2 className="card-title">Accès rapide</h2>
-        <div className="quick-grid">
-          <Link to="/translate" className="quick-card">
-            <IconHand size={26} />
-            <div>
-              <strong>Traduire en direct</strong>
-              <span>Utilisez la caméra pour traduire les signes</span>
-            </div>
-          </Link>
-          <Link to="/dataset" className="quick-card">
-            <IconDatabase size={26} />
-            <div>
-              <strong>Entraîner le modèle</strong>
-              <span>Enregistrez de nouveaux signes dans le dataset</span>
-            </div>
-          </Link>
-        </div>
-      </section>
-
-      {labels.length > 0 && (
-        <section className="card">
+        <div className="card-head">
           <h2 className="card-title">Répartition du dataset</h2>
+          <span className="badge badge-muted">{labels.length} signe(s)</span>
+        </div>
+        {labels.length === 0 ? (
+          <p className="empty-state">
+            Aucun signe enregistré pour le moment. Rendez-vous dans{' '}
+            <Link to="/dataset">Dataset</Link> pour capturer vos premiers signes.
+          </p>
+        ) : (
           <ul className="label-list">
             {labels.map((label) => (
               <li key={label}>
@@ -100,17 +121,15 @@ export default function Dashboard(): React.JSX.Element {
                 <div className="label-bar">
                   <div
                     className="label-bar-fill"
-                    style={{
-                      width: `${Math.min(100, (stats[label] / Math.max(...Object.values(stats))) * 100)}%`
-                    }}
+                    style={{ width: `${Math.min(100, (stats[label] / maxSamples) * 100)}%` }}
                   />
                 </div>
                 <span className="label-count">{stats[label]}</span>
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
     </div>
   )
 }

@@ -1,8 +1,12 @@
 import { IconCamera, IconHand, IconShield, IconSparkles } from './Icons'
+import { ThemeToggle } from './ThemeToggle'
 
 export function AuthLayout({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
     <div className="auth-page">
+      <div className="auth-theme">
+        <ThemeToggle compact />
+      </div>
       <div className="auth-shell">
         <aside className="auth-aside">
           <div className="auth-aside-brand">
